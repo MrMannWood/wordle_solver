@@ -18,6 +18,6 @@ Results from the current algorithm:
 |41|2|
 |1|1|
 
-Words that took more 5 guesses: 1675
+Words that took 5 or more guesses: 1675
 
 Words that took 5 guesses or fewer: 11297

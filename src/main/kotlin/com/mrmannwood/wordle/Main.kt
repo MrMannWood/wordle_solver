@@ -69,7 +69,7 @@ fun runForAllWords() {
             thresholdOrLess += words.size
         }
     }
-    println("Words that took more 5 guesses: $overThreshold")
+    println("Words that took 5 or more guesses: $overThreshold")
     println("Words that took 5 guesses or fewer: $thresholdOrLess")
 }
 
