@@ -62,20 +62,15 @@ fun runForAllWords() {
     var thresholdOrLess = 0
     results.toList().sortedByDescending { it.first }.forEach { (numGuesses, words) ->
         if (words.size == 0) return@forEach
-        println("${numGuesses}: ${words.size}")
+        println("${words.size} words took $numGuesses guesses")
         if (numGuesses > 5) {
             overThreshold += words.size
         } else {
             thresholdOrLess += words.size
         }
-        if (numGuesses >= 11) {
-            words.forEach { word ->
-                println("\t$word")
-            }
-        }
     }
-    println("Words that took more than threshold: $overThreshold")
-    println("Words that took threshold or fewer: $thresholdOrLess")
+    println("Words that took more 5 guesses: $overThreshold")
+    println("Words that took 5 guesses or fewer: $thresholdOrLess")
 }
 
 /**
