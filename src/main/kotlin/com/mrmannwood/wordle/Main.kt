@@ -2,7 +2,6 @@ package com.mrmannwood.wordle
 
 import java.io.BufferedReader
 import java.io.InputStreamReader
-import java.lang.Exception
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -60,9 +59,10 @@ fun runForAllWords() {
 
     var overThreshold = 0
     var thresholdOrLess = 0
+    println("|Guesses|Words|")
+    println("|---|---|")
     results.toList().sortedByDescending { it.first }.forEach { (numGuesses, words) ->
-        if (words.size == 0) return@forEach
-        println("${words.size} words took $numGuesses guesses")
+        println("|$numGuesses|${words.size}|")
         if (numGuesses > 5) {
             overThreshold += words.size
         } else {

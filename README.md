@@ -5,17 +5,16 @@ I was curious about different algorithms for finding the best guesses for the ga
 The dictionary in use is only 5 letter English words.
 
 Results from the current algorithm:
-
-| Number of Words | Number of Guesses |
+|Guesses|Words|
 |---|---|
-|5|9|
-|52|8|
-|320|7|
-|1298|6|
-|4246|5|
-|5403|4|
-|1606|3|
-|41|2|
+|9|5|
+|8|52|
+|7|320|
+|6|1298|
+|5|4246|
+|4|5403|
+|3|1606|
+|2|41|
 |1|1|
 
 Words that took 5 or more guesses: 1675
