@@ -3,15 +3,17 @@ package com.mrmannwood.wordle
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.lang.Exception
+import java.util.concurrent.Callable
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import kotlin.streams.asSequence
 
 object Main
 
 fun main(args: Array<String>) {
-//    runForAllWords()
-    runForOneWord("prick")
+    runForAllWords()
+//    runForOneWord("prick")
 }
 
 /**
@@ -40,45 +42,20 @@ fun runForOneWord(secretWord: String) {
  */
 fun runForAllWords() {
     val words = readWords()
-    println(words.size)
-
-    val results = mutableMapOf<Int, MutableList<String>>().apply { for(i in 0..21) put(i, mutableListOf()) }
 
     val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1)
-    val exceptions = mutableMapOf<String, Exception>()
-
-    val startTime = System.currentTimeMillis()
-    words.forEachIndexed { idx, word ->
-        executor.submit {
-            try {
-                val result = guessWord(words, word)
-                val list = results[result.size]!!
-                synchronized(list) {
-                    list.add(word)
-                }
-            } catch (e: Exception) {
-                synchronized(exceptions) { exceptions.put(word, e) }
-            }
-        }
+    val futures = mutableListOf<Future<Pair<String, Int>>>()
+    words.forEach { word ->
+        futures.add(
+            executor.submit(Callable { word to guessWord(words, word).size })
+        )
     }
-
     executor.shutdown()
-    try {
-        if (!executor.awaitTermination(10, TimeUnit.MINUTES)) {
-            println("Got stuck I guess?")
-        }
-    } catch (e: InterruptedException) {
-        println("Interrupted")
-    }
-    val endTime = System.currentTimeMillis()
-    println("Ellapsed Time: ${endTime - startTime}")
 
-    println("e: ${exceptions.size}")
-    if (exceptions.isNotEmpty()) {
-        exceptions.asSequence().first().let { (word, ex) ->
-            println("Exception while handling $word")
-            ex.printStackTrace()
-        }
+    val results = mutableMapOf<Int, MutableList<String>>()
+    futures.forEach {
+        val result = it.get(10, TimeUnit.MINUTES)
+        results.getOrPut(result.second) { mutableListOf() }.add(result.first)
     }
 
     var overThreshold = 0
