@@ -6,14 +6,18 @@ The dictionary in use is only 5 letter English words.
 
 Results from the current algorithm:
 
-5 words took 9 guesses
-52 words took 8 guesses
-320 words took 7 guesses
-1298 words took 6 guesses
-4246 words took 5 guesses
-5403 words took 4 guesses
-1606 words took 3 guesses
-41 words took 2 guesses
-1 words took 1 guesses
+| Number of Words | Number of Guesses |
+|---|---|
+|5|9|
+|52|8|
+|320|7|
+|1298|6|
+|4246|5|
+|5403|4|
+|1606|3|
+|41|2|
+|1|1|
+
 Words that took more 5 guesses: 1675
+
 Words that took 5 guesses or fewer: 11297
