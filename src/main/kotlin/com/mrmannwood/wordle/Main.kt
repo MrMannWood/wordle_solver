@@ -1,6 +1,8 @@
 package com.mrmannwood.wordle
 
 import java.io.BufferedReader
+import java.io.File
+import java.io.FileWriter
 import java.io.InputStreamReader
 import java.lang.Exception
 import java.util.concurrent.Callable
@@ -12,13 +14,18 @@ import kotlin.streams.asSequence
 object Main
 
 fun main(args: Array<String>) {
+    findTheBestFirstGuess()
 //    runForAllWords()
-//    runForOneWord("aarti")
-    getTop10GuessesForEachStrategy(
-        listOf(HighestCharacterFrequencyStrategy, CharacterEliminationStrategy),
-        readWords(),
-        listOf()
-    )
+//    runForOneWord("labia")
+//    getTop10GuessesForEachStrategy(
+//        listOf(HighestCharacterFrequencyStrategy, CharacterEliminationStrategy),
+//        readWords(),
+//        listOf(
+//            "tears" to "bbbyb",
+//            "prong" to "ggbbb",
+//            "primy" to "gggbb" // prick
+//        )
+//    )
 }
 
 fun getTop10GuessesForEachStrategy(
@@ -81,6 +88,66 @@ fun getTop10GuessesForEachStrategy(
         strategy.getBestGuesses(10, words, dictionary, eliminatedCharacters, knownGoodCharacters)
             .forEach { println("\t$it") }
     }
+}
+
+fun findTheBestFirstGuess() {
+    val dictionary = readWords()
+
+    val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1)
+    val scores = mutableMapOf<String, Long>()
+    val futures = ArrayList<Future<Pair<String, Int>>>(dictionary.size)
+    dictionary.forEachIndexed { sIdx, secretWord ->
+        dictionary.forEachIndexed { gIdx, guess ->
+            val job = executor.submit(Callable {
+                guess to someBullshit(guess, secretWord, dictionary)
+            })
+            if (sIdx == 0) futures.add(job) else futures[gIdx] = job
+        }
+        futures.forEach { future ->
+            val (guess, score) = future.get(5, TimeUnit.MINUTES)
+            scores[guess] = scores.getOrPut(guess) { 0 } + score
+        }
+        if (sIdx % 10 == 0) {
+            println("Completed for $sIdx words. ${(sIdx.toFloat() / dictionary.size) * 100}")
+        }
+    }
+
+    FileWriter(File("")).use {out ->
+        scores.asSequence().sortedBy { it.value }.forEach { (guess, score) ->
+            out.write("$guess,$score\n")
+        }
+    }
+}
+
+fun someBullshit(guess: String, secretWord: String, dictionary: List<String>): Int {
+    val result = scoreGuess(guess, secretWord)
+    if (result == "ggggg") return 1
+    return dictionary
+        .filter { word ->
+            val evalWord = word.toCharArray()
+
+            for (idx in evalWord.indices) {
+                if (result[idx] == 'g') {
+                    if (evalWord[idx] != guess[idx]) return@filter false
+                    evalWord[idx] = '-'
+                }
+            }
+            for (idx in evalWord.indices) {
+                if (result[idx] == 'y') {
+                    if (guess[idx] == evalWord[idx]) return@filter false
+                    if (guess[idx] !in evalWord) return@filter false
+                    for (i in evalWord.indices) if (evalWord[i] == guess[idx]) { evalWord[i] = '-'; break }
+                }
+            }
+            for (idx in evalWord.indices) {
+                if (result[idx] == 'b') {
+                    if (guess[idx] in evalWord) return@filter false
+                }
+            }
+            return@filter true
+        }
+        .filter { it != guess }
+        .count()
 }
 
 /**
@@ -157,6 +224,8 @@ fun guessWord(allWords: List<String>, secretWord: String): List<Pair<String, Str
     val eliminatedCharacters = mutableListOf<Char>()
 
     while (true) {
+        println("words.size: ${words.size}")
+
         val guess = getBestGuess(words, allWords, eliminatedCharacters, knownGoodCharacters)
 
         val result = scoreGuess(guess, secretWord)
@@ -235,8 +304,8 @@ fun readWords(): List<String> {
  * Uses the different strategies to make a guess. This was tuned with experimentation.
  */
 fun getBestGuess(words: List<String>, allWords: List<String>, eliminatedCharacters: List<Char>, usedCharacters: List<Char>): String {
-    if (words.size == 1) { return words[0] }
-    if (words.size in 3..10000) { // 10000 is a magic number. No idea why it works, but experimentation shows that it does
+    if (words.size <= 2) { return words[0] }
+    if (words.size != allWords.size) {
         val candidate = CharacterEliminationStrategy.getBestGuess(words, allWords, eliminatedCharacters, usedCharacters)
         if (candidate != null) {
             return candidate
@@ -308,6 +377,8 @@ object CharacterEliminationStrategy: GuessStrategy {
         eliminatedCharacters: List<Char>,
         usedCharacters: List<Char>
     ): List<String> {
+        if (words.size == 2) return words
+
         val positions = mutableListOf<MutableMap<Char, Int>>().apply {
             for(idx in 0..4) { add(mutableMapOf()) }
         }
