@@ -81,5 +81,4 @@ fun runForAllWords() {
     }
     println("Words that took 6 or more guesses: $overThreshold")
     println("Words that took 6 guesses or fewer: $thresholdOrLess")
-    println("% of Words that took 6 guesses or fewer: ${thresholdOrLess.toDouble() / sum * 100}")
 }
