@@ -1,170 +1,66 @@
 package com.mrmannwood.wordle
 
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileWriter
-import java.io.InputStreamReader
-import java.lang.Exception
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
-import kotlin.streams.asSequence
-
-object Main
+import kotlin.Exception
 
 fun main(args: Array<String>) {
-    findTheBestFirstGuess()
 //    runForAllWords()
-//    runForOneWord("labia")
-//    getTop10GuessesForEachStrategy(
-//        listOf(HighestCharacterFrequencyStrategy, CharacterEliminationStrategy),
-//        readWords(),
-//        listOf(
-//            "tears" to "bbbyb",
-//            "prong" to "ggbbb",
-//            "primy" to "gggbb" // prick
-//        )
-//    )
+//    runForOneWord("maker")
+    getTop10GuessesForEachStrategy(
+        GuessStrategy.getStrategies(),
+        DICTIONARY,
+        listOf(
+            GuessScore.score("tears", "prick"),
+            GuessScore.score("prong", "prick")
+//            GuessScore.score("primy", "prick")
+        )
+    )
 }
 
 fun getTop10GuessesForEachStrategy(
     strategies: List<GuessStrategy>,
     dictionary: List<String>,
-    guesses: List<Pair<String, String>>
+    guesses: List<GuessScore>
 ) {
     var words = dictionary
-    val knownGoodCharacters = mutableListOf<Char>()
-    val eliminatedCharacters = mutableListOf<Char>()
+    val knownGoodCharacters = mutableSetOf<Char>()
+    val eliminatedCharacters = mutableSetOf<Char>()
 
-    guesses.forEach { (guess, result) ->
-        if (result == "ggggg") return@forEach
+    guesses.forEach { guessScore ->
+        if (guessScore.isCorrect()) return@forEach
 
-        guess.forEachIndexed { idx, letter ->
-            if (result[idx] == 'g' || result[idx]== 'y') knownGoodCharacters.addDistinct(letter)
-        }
-        guess.forEachIndexed { idx, letter ->
-            if (result[idx] == 'b' && letter !in knownGoodCharacters) eliminatedCharacters.addDistinct(letter)
-        }
-        if ('b' !in result) {
-            for (c in 'a'..'z') {
-                if (c in guess)
-                    knownGoodCharacters.addDistinct(c)
-                else
-                    eliminatedCharacters.addDistinct(c)
-            }
-        }
+        knownGoodCharacters.addAll(guessScore.getKnownGoodCharacters())
+        eliminatedCharacters.addAll(guessScore.getKnownBadCharacters().filter { !knownGoodCharacters.contains(it) })
 
-        words = words
-            .filter { word ->
-                val evalWord = word.toCharArray()
-
-                for (idx in evalWord.indices) {
-                    if (result[idx] == 'g') {
-                        if (evalWord[idx] != guess[idx]) return@filter false
-                        evalWord[idx] = '-'
-                    }
-                }
-                for (idx in evalWord.indices) {
-                    if (result[idx] == 'y') {
-                        if (guess[idx] == evalWord[idx]) return@filter false
-                        if (guess[idx] !in evalWord) return@filter false
-                        for (i in evalWord.indices) if (evalWord[i] == guess[idx]) { evalWord[i] = '-'; break }
-                    }
-                }
-                for (idx in evalWord.indices) {
-                    if (result[idx] == 'b') {
-                        if (guess[idx] in evalWord) return@filter false
-                    }
-                }
-                return@filter true
-            }
-            .filter { it != guess }
-            .toList()
+        words = words.filter { guessScore.isValid(it) }
     }
 
-    strategies.forEach {strategy ->
-        println(strategy.name)
-        strategy.getBestGuesses(10, words, dictionary, eliminatedCharacters, knownGoodCharacters)
-            .forEach { println("\t$it") }
-    }
-}
-
-fun findTheBestFirstGuess() {
-    val dictionary = readWords()
-
-    val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1)
-    val scores = mutableMapOf<String, Long>()
-    val futures = ArrayList<Future<Pair<String, Int>>>(dictionary.size)
-    dictionary.forEachIndexed { sIdx, secretWord ->
-        dictionary.forEachIndexed { gIdx, guess ->
-            val job = executor.submit(Callable {
-                guess to someBullshit(guess, secretWord, dictionary)
-            })
-            if (sIdx == 0) futures.add(job) else futures[gIdx] = job
-        }
-        futures.forEach { future ->
-            val (guess, score) = future.get(5, TimeUnit.MINUTES)
-            scores[guess] = scores.getOrPut(guess) { 0 } + score
-        }
-        if (sIdx % 10 == 0) {
-            println("Completed for $sIdx words. ${(sIdx.toFloat() / dictionary.size) * 100}")
+    strategies.forEach { strategy ->
+        val g = strategy.getBestGuesses(10, words, dictionary, eliminatedCharacters, knownGoodCharacters)
+        if (g.isNotEmpty()) {
+            println(strategy.name)
+            g.forEach { println("\t$it") }
         }
     }
-
-    FileWriter(File("")).use {out ->
-        scores.asSequence().sortedBy { it.value }.forEach { (guess, score) ->
-            out.write("$guess,$score\n")
-        }
-    }
-}
-
-fun someBullshit(guess: String, secretWord: String, dictionary: List<String>): Int {
-    val result = scoreGuess(guess, secretWord)
-    if (result == "ggggg") return 1
-    return dictionary
-        .filter { word ->
-            val evalWord = word.toCharArray()
-
-            for (idx in evalWord.indices) {
-                if (result[idx] == 'g') {
-                    if (evalWord[idx] != guess[idx]) return@filter false
-                    evalWord[idx] = '-'
-                }
-            }
-            for (idx in evalWord.indices) {
-                if (result[idx] == 'y') {
-                    if (guess[idx] == evalWord[idx]) return@filter false
-                    if (guess[idx] !in evalWord) return@filter false
-                    for (i in evalWord.indices) if (evalWord[i] == guess[idx]) { evalWord[i] = '-'; break }
-                }
-            }
-            for (idx in evalWord.indices) {
-                if (result[idx] == 'b') {
-                    if (guess[idx] in evalWord) return@filter false
-                }
-            }
-            return@filter true
-        }
-        .filter { it != guess }
-        .count()
 }
 
 /**
  * Used to get generate guesses for one word
  */
 fun runForOneWord(secretWord: String) {
-    val words = readWords()
+    val words = DICTIONARY
 
     println("Searching for $secretWord")
     val guesses = guessWord(words, secretWord)
 
-    if (guesses.size > 5) {
+    if (guesses.size > 6) {
         println("Lost :( ${guesses.size}")
     } else {
         println("Won :D ${guesses.size}")
     }
-    //println("The word is ${guesses.last().first}")
     guesses.forEach { (guess, result) ->
         println("Guess: $guess, Result: $result")
     }
@@ -175,15 +71,16 @@ fun runForOneWord(secretWord: String) {
  * understand how well the algorithm is working
  */
 fun runForAllWords() {
-    val words = readWords()
+    val secretWords = WORDLE_LIST
+    val dictionary = DICTIONARY
 
     val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1)
     val futures = mutableListOf<Future<Pair<String, Int>>>()
-    words.forEach { word ->
+    secretWords.forEach { word ->
         futures.add(
             executor.submit(Callable {
                 try {
-                    word to guessWord(words, word).size
+                    word to guessWord(dictionary, word).size
                 } catch (e: Exception) {
                     throw Exception("Error for word: $word", e)
                 }
@@ -204,278 +101,57 @@ fun runForAllWords() {
     println("|---|---|")
     results.toList().sortedByDescending { it.first }.forEach { (numGuesses, words) ->
         println("|$numGuesses|${words.size}|")
-        if (numGuesses > 5) {
+        if (numGuesses > 6) {
             overThreshold += words.size
         } else {
             thresholdOrLess += words.size
         }
+        if (numGuesses > 6) {
+            words.forEach { println("\t$it") }
+        }
     }
-    println("Words that took 5 or more guesses: $overThreshold")
-    println("Words that took 5 guesses or fewer: $thresholdOrLess")
+    println("Words that took 6 or more guesses: $overThreshold")
+    println("Words that took 6 guesses or fewer: $thresholdOrLess")
 }
 
 /**
  * The actual solver. Takes the dictionary and the secret word, and returns a list of all the guesses with their results
  */
-fun guessWord(allWords: List<String>, secretWord: String): List<Pair<String, String>> {
+fun guessWord(allWords: List<String>, secretWord: String): List<GuessScore> {
     var words = allWords
-    val guesses = mutableListOf<Pair<String, String>>()
-    val knownGoodCharacters = mutableListOf<Char>()
-    val eliminatedCharacters = mutableListOf<Char>()
+    val guesses = mutableListOf<GuessScore>()
+    val knownGoodCharacters = mutableSetOf<Char>()
+    val eliminatedCharacters = mutableSetOf<Char>()
 
     while (true) {
-        println("words.size: ${words.size}")
-
         val guess = getBestGuess(words, allWords, eliminatedCharacters, knownGoodCharacters)
 
-        val result = scoreGuess(guess, secretWord)
-        guesses.add(Pair(guess, result))
-        if (result == "ggggg") break
+        val guessScore = GuessScore.score(guess, secretWord)
+        guesses.add(guessScore)
+        if (guessScore.isCorrect()) break
         if (guesses.size > 20) {
+            //prevents infinite loops
             break
         }
 
-        guess.forEachIndexed { idx, letter ->
-            if (result[idx] == 'g' || result[idx]== 'y') knownGoodCharacters.addDistinct(letter)
-        }
-        guess.forEachIndexed { idx, letter ->
-            if (result[idx] == 'b' && letter !in knownGoodCharacters) eliminatedCharacters.addDistinct(letter)
-        }
-        if ('b' !in result) {
-            for (c in 'a'..'z') {
-                if (c in guess)
-                    knownGoodCharacters.addDistinct(c)
-                else
-                    eliminatedCharacters.addDistinct(c)
-            }
-        }
+        knownGoodCharacters.addAll(guessScore.getKnownGoodCharacters())
+        eliminatedCharacters.addAll(guessScore.getKnownBadCharacters().filter { !knownGoodCharacters.contains(it) })
 
-        words = words
-                .filter { word ->
-                    val evalWord = word.toCharArray()
-
-                    for (idx in evalWord.indices) {
-                        if (result[idx] == 'g') {
-                            if (evalWord[idx] != guess[idx]) return@filter false
-                            evalWord[idx] = '-'
-                        }
-                    }
-                    for (idx in evalWord.indices) {
-                        if (result[idx] == 'y') {
-                            if (guess[idx] == evalWord[idx]) return@filter false
-                            if (guess[idx] !in evalWord) return@filter false
-                            for (i in evalWord.indices) if (evalWord[i] == guess[idx]) { evalWord[i] = '-'; break }
-                        }
-                    }
-                    for (idx in evalWord.indices) {
-                        if (result[idx] == 'b') {
-                            if (guess[idx] in evalWord) return@filter false
-                        }
-                    }
-                    return@filter true
-                }
-                .filter { it != guess }
-                .toList()
+        words = words.filter { guessScore.isValid(it) }
     }
 
     return guesses
 }
 
 /**
- * Ceremony to read the dictionary
- */
-fun readWords(): List<String> {
-    return BufferedReader(InputStreamReader(Main::class.java.getResourceAsStream("/words.txt"))).lines()
-        .asSequence()
-        .filter { it.length == 5 }
-        .filter { word ->
-            word.forEach { c ->
-                if (c !in 'a'..'z' && c !in 'A'..'Z') {
-                    return@filter false
-                }
-            }
-            return@filter true
-        }
-        .map { it.toLowerCase() }
-        .toList()
-}
-
-/**
  * Uses the different strategies to make a guess. This was tuned with experimentation.
  */
-fun getBestGuess(words: List<String>, allWords: List<String>, eliminatedCharacters: List<Char>, usedCharacters: List<Char>): String {
-    if (words.size <= 2) { return words[0] }
-    if (words.size != allWords.size) {
-        val candidate = CharacterEliminationStrategy.getBestGuess(words, allWords, eliminatedCharacters, usedCharacters)
+fun getBestGuess(words: List<String>, allWords: List<String>, eliminatedCharacters: Set<Char>, usedCharacters: Set<Char>): String {
+    GuessStrategy.getStrategies().forEach {
+        val candidate = it.getBestGuesses(1, words, allWords, eliminatedCharacters, usedCharacters).firstOrNull()
         if (candidate != null) {
             return candidate
         }
     }
-    return HighestCharacterFrequencyStrategy.getBestGuess(words, allWords, eliminatedCharacters, usedCharacters)
-}
-
-/**
- * This is the part that is "wordle." Takes a guess word and a secret word and returns a string representing the wordle
- * color result
- * e.x. Guess: pines, SecretWord: prick, Result: gybbb
- */
-fun scoreGuess(guess: String, secretWord: String): String {
-    val result = charArrayOf('b','b','b','b','b')
-    val gEval = guess.toCharArray()
-    val sWord = secretWord.toCharArray()
-
-    for (idx in result.indices) {
-        if (sWord[idx] == gEval[idx]) {
-            result[idx] = 'g'
-            sWord[idx] = '-'
-            gEval[idx] = '-'
-        }
-    }
-    for (idx in result.indices) {
-        if (gEval[idx] == '-') continue
-        if (gEval[idx] in sWord) {
-            result[idx] = 'y'
-            for (i in sWord.indices) {
-                if (gEval[idx] == sWord[i]) {
-                    sWord[i] = '-'
-                    break
-                }
-            }
-            gEval[idx] = '-'
-        }
-    }
-    return String(result)
-}
-
-/**
- * Just some ceremony
- */
-fun <E> MutableList<E>.addDistinct(element: E) {
-    if (!contains(element)) add(element)
-}
-
-/**
- * I experimented with enough strategies that I decided to make an interface. Turns out that (of the ones I tried) only
- * these two were any good
- */
-interface GuessStrategy {
-    val name: String
-    fun getBestGuesses(numGuesses: Int, words: List<String>, allWords: List<String>, eliminatedCharacters: List<Char>, usedCharacters: List<Char>): List<String>
-    fun getBestGuess(words: List<String>, allWords: List<String>, eliminatedCharacters: List<Char>, usedCharacters: List<Char>): String?
-}
-
-/**
- * Analyze the remaining words and find the characters that aren't common, then choose a word from allWords that has the
- * most of them. This is handle the "shill, skill, spill" case, but it turns out it's also really effective generally
- */
-object CharacterEliminationStrategy: GuessStrategy {
-    override val name = "CharacterEliminationStrategy"
-    override fun getBestGuesses(
-        numGuesses: Int,
-        words: List<String>,
-        allWords: List<String>,
-        eliminatedCharacters: List<Char>,
-        usedCharacters: List<Char>
-    ): List<String> {
-        if (words.size == 2) return words
-
-        val positions = mutableListOf<MutableMap<Char, Int>>().apply {
-            for(idx in 0..4) { add(mutableMapOf()) }
-        }
-        words.forEach { word ->
-            word.toCharArray().forEachIndexed { idx, letter ->
-                positions[idx][letter] = positions[idx].getOrElse(letter) { 0 } + 1
-            }
-        }
-        val letters = mutableListOf<Char>()
-        positions.forEach { position ->
-            if (position.values.size != 1) {
-                position.keys.forEach {
-                    if (it !in usedCharacters && it !in eliminatedCharacters) {
-                        letters.addDistinct(it)
-                    }
-                }
-            }
-        }
-        if (letters.size == 0) return emptyList()
-
-        return allWords.asSequence()
-            .map { word ->
-                val wordLetters = word.toCharArray().distinct()
-                var count = 0
-                letters.forEach { if(it in wordLetters) count++ }
-                word to count
-            }
-            .sortedByDescending { it.second }
-            .map { it.first }
-            .take(numGuesses)
-            .toList()
-    }
-
-    override fun getBestGuess(words: List<String>, allWords: List<String>, eliminatedCharacters: List<Char>, usedCharacters: List<Char>): String? {
-        return getBestGuesses(1, words, allWords, eliminatedCharacters, usedCharacters).firstOrNull()
-    }
-}
-
-/**
- * Analyzes the remaining words for the characters that occur the most often (ignoring duplicates) and chooses the word
- * with the most of them.
- * As a secondary step, analyzes the positions of the most common letters, and chooses a word where the most common
- * letters are in their most common positions.
- * One of my strategies was just this, but ignoring vowels (since they can be figured out from context clues, and the
- * first guess will always just be mostly vowels anyway), but it did significantly worse
- */
-object HighestCharacterFrequencyStrategy: GuessStrategy {
-    override val name = "HighestCharacterFrequencyStrategy"
-    override fun getBestGuesses(
-        numGuesses: Int,
-        words: List<String>,
-        allWords: List<String>,
-        eliminatedCharacters: List<Char>,
-        usedCharacters: List<Char>
-    ): List<String> {
-        val letters = mutableMapOf<Char, Int>().apply { for (c in 'a'..'z') put(c, 0) }
-        val positions = mutableListOf<MutableMap<Char, Int>>().apply {
-            for (idx in 0..4) add(mutableMapOf<Char, Int>().apply { for (c in 'a'..'z') put(c, 0) })
-        }
-        words.forEach { word ->
-            word.toCharArray().distinct().forEach { letter -> letters[letter] = letters[letter]!! + 1 }
-            word.toCharArray().forEachIndexed { idx, letter -> positions[idx][letter] = positions[idx][letter]!! + 1 }
-        }
-
-        var sorted = words.asSequence()
-            .map { word ->
-                var total = 0
-                word.toCharArray().distinct().forEach { letter ->
-                    total += letters[letter]!!
-                }
-                Pair(word, total)
-            }
-            .toList()
-            .sortedByDescending { it.second }
-
-        var minScore = sorted.first().second - ((sorted.first().second - sorted.last().second) / 10)
-
-        sorted = sorted.asSequence()
-            .filter { it.second >= minScore }
-            .map { it.first }
-            .map { word ->
-                var total = 0
-                word.forEachIndexed { idx, letter ->
-                    total += positions[idx][letter]!!
-                }
-                Pair(word, total)
-            }
-            .toList()
-            .sortedByDescending { it.second }
-
-        minScore = sorted.first().second - ((sorted.first().second - sorted.last().second) / 10)
-        sorted = sorted.filter { it.second >= minScore }
-
-        return sorted.map { it.first }.take(numGuesses)
-    }
-
-    override fun getBestGuess(words: List<String>, allWords: List<String>, eliminatedCharacters: List<Char>, usedCharacters: List<Char>): String {
-        return getBestGuesses(1, words, allWords, eliminatedCharacters, usedCharacters).first()
-    }
+    throw Exception("No strategy returned a word for $words")
 }
