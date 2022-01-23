@@ -1,23 +1,37 @@
 plugins {
-    id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '1.3.72'
+    id 'org.jetbrains.kotlin.multiplatform' version '1.3.72'
 }
-
-group 'com.mrmannwood'
-version '1.0-SNAPSHOT'
-
 repositories {
     mavenCentral()
 }
+group 'com.mrmannwood'
+version '0.0.1'
 
-dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    testCompile group: 'junit', name: 'junit', version: '4.12'
-}
+apply plugin: 'maven-publish'
 
-compileKotlin {
-    kotlinOptions.jvmTarget = "1.8"
-}
-compileTestKotlin {
-    kotlinOptions.jvmTarget = "1.8"
+kotlin {
+    jvm()
+    js {
+        browser {
+        }
+        nodejs {
+        }
+    }
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation kotlin('stdlib-common')
+            }
+        }
+        jvmMain {
+            dependencies {
+                implementation kotlin('stdlib-jdk8')
+            }
+        }
+        jsMain {
+            dependencies {
+                implementation kotlin('stdlib-js')
+            }
+        }
+    }
 }

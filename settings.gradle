@@ -1,2 +1,4 @@
-rootProject.name = 'wordle'
+rootProject.name = 'wordle_solver'
 
+
+enableFeaturePreview('GRADLE_METADATA')

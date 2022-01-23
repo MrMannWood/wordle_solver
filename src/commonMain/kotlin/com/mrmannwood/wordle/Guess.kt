@@ -1,8 +1,8 @@
 package com.mrmannwood.wordle
 
-data class GuessScore private constructor(val guess: String, val score: String) {
+data class Guess private constructor(val guess: String, val score: String) {
     companion object {
-        fun score(guess: String, secretWord: String): GuessScore {
+        fun score(guess: String, secretWord: String): Guess {
             val result = CharArray(5) {'b'}
             val gEval = guess.toCharArray()
             val sWord = secretWord.toCharArray()
@@ -27,7 +27,7 @@ data class GuessScore private constructor(val guess: String, val score: String) 
                     gEval[idx] = '-'
                 }
             }
-            return GuessScore(guess, String(result))
+            return Guess(guess, String(result))
         }
     }
 
