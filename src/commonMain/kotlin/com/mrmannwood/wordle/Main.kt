@@ -1,5 +1,21 @@
 package com.mrmannwood.wordle
 
+fun getRemainingWords(guesses: List<Guess>): List<String> {
+    val words = DICTIONARY.toMutableList()
+    val knownGoodCharacters = mutableSetOf<Char>()
+    val eliminatedCharacters = mutableSetOf<Char>()
+
+    guesses.forEach { guessScore ->
+        handleGuess(
+                guess = guessScore,
+                words = words,
+                goodChars = knownGoodCharacters,
+                badChars = eliminatedCharacters
+        )
+    }
+    return words
+}
+
 fun getTop10Guesses(guesses: List<Guess>): List<String> {
     val words = DICTIONARY.toMutableList()
     val knownGoodCharacters = mutableSetOf<Char>()
