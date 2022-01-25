@@ -2,6 +2,9 @@ package com.mrmannwood.wordle
 
 data class Guess private constructor(val guess: String, val score: String) {
     companion object {
+        fun guess(guess: String, score: String): Guess {
+            return Guess(guess, score)
+        }
         fun score(guess: String, secretWord: String): Guess {
             val result = CharArray(5) {'b'}
             val gEval = guess.toCharArray()
