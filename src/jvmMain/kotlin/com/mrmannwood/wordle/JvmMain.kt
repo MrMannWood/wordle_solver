@@ -1,12 +1,53 @@
 package com.mrmannwood.wordle
 
+import java.util.*
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
-    runForAllWords()
+    worldSolver()
+}
+
+private fun worldSolver() {
+    println("Wordle Solver")
+    val scanner = Scanner(System.`in`)
+    val guesses = mutableListOf<Guess>()
+    while (true) {
+        guesses.add(Guess.guess(
+            readGuess(scanner),
+            readResult(scanner)
+        ))
+        val words = getRemainingWords(guesses)
+        if (words.size == 1) {
+            break
+        }
+        words.forEach { println(it) }
+        println("There are ${words.size} viable words remaining")
+    }
+}
+
+private fun readGuess(scanner: Scanner): String {
+    while(true) {
+        print("Enter Guess: ")
+        val guess = scanner.nextLine().toLowerCase()
+        if (guess.length == 5 && guess.matches(Regex("[a-z]*"))) {
+            return guess
+        }
+        println("Guess is not valid. Must be 5 letters.")
+    }
+}
+
+private fun readResult(scanner: Scanner): String {
+    while(true) {
+        print("Enter Result: ")
+        val result = scanner.nextLine().toLowerCase()
+        if (result.length == 5 && result.matches(Regex("[bgy]*"))) {
+            return result
+        }
+        println("Result is not valid. Must be 5 of [g, y, b].")
+    }
 }
 
 fun getTop10Guesses() {

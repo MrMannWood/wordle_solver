@@ -70,8 +70,6 @@ fun guessWord(secretWord: String): List<Guess> {
 }
 
 fun handleGuess(guess: Guess, words: MutableList<String>, goodChars: MutableSet<Char>, badChars: MutableSet<Char>) {
-    if (guess.isCorrect()) return
-
     goodChars.addAll(guess.getKnownGoodCharacters())
     badChars.addAll(guess.getKnownBadCharacters().filter { !goodChars.contains(it) })
 
