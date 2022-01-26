@@ -7,7 +7,25 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 fun main(args: Array<String>) {
+    //playWordle()
     worldSolver()
+}
+
+private fun playWordle() {
+    val secretWord = WORDLE_LIST.random()
+    val scanner = Scanner(System.`in`)
+    val guesses = mutableListOf<Guess>()
+    for (i in 5 downTo 0) {
+        val guess = readGuess(scanner)
+        guesses.add(Guess.score(guess, secretWord))
+        println(guesses.last().score)
+        if (guesses.last().isCorrect()) break
+    }
+    if (guesses.last().isCorrect()) {
+        println("Congrats, you won!")
+    } else {
+        println("Sorry! The word was $secretWord")
+    }
 }
 
 private fun worldSolver() {
