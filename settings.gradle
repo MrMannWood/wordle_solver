@@ -1,5 +1,6 @@
 rootProject.name = 'wordle'
 
+include 'wordle_browser'
 include 'wordle_cmd'
 include 'wordle_solver'
 
