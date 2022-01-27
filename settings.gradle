@@ -1,4 +1,6 @@
-rootProject.name = 'wordle_solver'
+rootProject.name = 'wordle'
 
+include 'wordle_cmd'
+include 'wordle_solver'
 
 enableFeaturePreview('GRADLE_METADATA')

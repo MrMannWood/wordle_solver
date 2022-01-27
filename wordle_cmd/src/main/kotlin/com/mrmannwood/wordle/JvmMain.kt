@@ -38,11 +38,13 @@ private fun worldSolver() {
             readResult(scanner)
         ))
         val words = getRemainingWords(guesses)
+        println(words.joinToString(", ") { it })
         if (words.size == 1) {
+            println("There is 1 viable word remaining")
             break
+        } else {
+            println("There are ${words.size} viable words remaining")
         }
-        words.forEach { println(it) }
-        println("There are ${words.size} viable words remaining")
     }
 }
 
