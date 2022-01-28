@@ -1,5 +1,5 @@
 plugins {
-    id 'org.jetbrains.kotlin.js' version '1.3.72'
+    id 'org.jetbrains.kotlin.js' version '1.6.10'
 }
 
 group 'com.mrmannwood'
@@ -11,7 +11,21 @@ repositories {
 
 dependencies {
     implementation project(":wordle_solver")
+    implementation project(":wordle_dictionary")
     implementation "org.jetbrains.kotlin:kotlin-stdlib-js"
+    implementation "org.jetbrains.kotlinx:kotlinx-html-js:0.7.3"
 }
 
-kotlin.target.browser { }
+kotlin {
+    js {
+        browser {
+            commonWebpackConfig {
+                cssSupport.enabled = true
+            }
+            webpackTask {
+                outputFileName = "wordle.js"
+            }
+        }
+        binaries.executable()
+    }
+}

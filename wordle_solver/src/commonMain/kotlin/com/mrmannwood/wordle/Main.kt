@@ -17,6 +17,7 @@ fun getRemainingWords(guesses: List<Guess>): List<String> {
 }
 
 fun getTop10Guesses(guesses: List<Guess>): List<String> {
+    val dictionary = DICTIONARY.toMutableList()
     val words = DICTIONARY.toMutableList()
     val knownGoodCharacters = mutableSetOf<Char>()
     val eliminatedCharacters = mutableSetOf<Char>()
@@ -33,9 +34,10 @@ fun getTop10Guesses(guesses: List<Guess>): List<String> {
     val generatedGuesses = mutableListOf<String>()
     for (i in 0..9) {
         if (words.isNotEmpty()) {
-            val guess = getBestGuess(words, DICTIONARY, eliminatedCharacters, knownGoodCharacters) ?: break
+            val guess = getBestGuess(words, dictionary, eliminatedCharacters, knownGoodCharacters) ?: break
             generatedGuesses.add(guess)
             words.remove(guess)
+            dictionary.remove(guess)
         }
     }
     return generatedGuesses

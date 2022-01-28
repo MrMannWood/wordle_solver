@@ -7,8 +7,6 @@ repositories {
 group 'com.mrmannwood'
 version '0.0.1'
 
-apply plugin: 'maven-publish'
-
 kotlin {
     jvm()
     js {
@@ -21,19 +19,16 @@ kotlin {
         commonMain {
             dependencies {
                 implementation kotlin('stdlib-common')
-                api project(":wordle_dictionary")
             }
         }
         jvmMain {
             dependencies {
                 implementation kotlin('stdlib-jdk8')
-                api project(":wordle_dictionary")
             }
         }
         jsMain {
             dependencies {
                 implementation kotlin('stdlib-js')
-                api project(":wordle_dictionary")
             }
         }
     }

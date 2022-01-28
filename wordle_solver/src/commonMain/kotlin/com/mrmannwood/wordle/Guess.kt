@@ -30,7 +30,7 @@ data class Guess private constructor(val guess: String, val score: String) {
                     gEval[idx] = '-'
                 }
             }
-            return Guess(guess, String(result))
+            return Guess(guess, result.concatToString())
         }
     }
 

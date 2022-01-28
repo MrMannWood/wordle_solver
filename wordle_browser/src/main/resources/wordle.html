@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>wordle_browser</title>
+    <script src="wordle.js" defer></script>
+</head>
+<body>
+
+    <div id="wordle_setup_div">
+        <label for="secret_word_input">Secret Word: </label>
+        <input type="text" id="secret_word_input" value="">
+    </div>
+
+    <div id="wordle_game_div" style="display: none;">
+        <p id="secret_word_result"></p>
+
+        <label for="guess_input">Guess: </label>
+        <input type="text" id="guess_input" value="">
+
+        <table id="wordle_table"></table>
+
+        <br/>
+        <br/>
+        <label for="remaining_words">Remaining Words: </label>
+        <table id="remaining_words"></table>
+        <br/>
+        <br/>
+        <label for="best_guess">Recommended Guesses: </label>
+        <table id="best_guess"></table>
+    </div>
+</body>
+</html>
